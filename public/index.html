@@ -9,30 +9,31 @@
         th, td { border: 1px solid #ccc; padding: 0.5em; text-align: left; }
         th { background: #f5f5f5; }
         input, select, button { margin: 0.3em 0; padding: 0.5em; }
-        .upload-section {
-            margin: 1em 0;
-            padding: 1em;
-            background: #f5f5f5;
-            border-radius: 4px;
-        }
-        #upload-status {
-            margin-left: 1em;
-            padding: 0.5em;
-            display: inline-block;
-        }
-        .success { color: green; background: #e8f5e9; }
-        .error { color: red; background: #ffebee; }
+        .category-select { margin-right: 1em; }
+        .nav-links { margin-bottom: 1em; }
     </style>
 </head>
 <body>
 <h1>Simple Expense Tracker</h1>
+
+<div class="nav-links">
+    <a href="categories.php">Manage Categories</a>
+</div>
 
 <form id="transaction-form" autocomplete="off">
     <input type="hidden" id="transaction-id">
     <input type="text" id="name" placeholder="Transaction Name" required>
     <input type="date" id="date" required>
     <input type="number" id="amount" step="0.01" placeholder="Amount" required>
-    <input type="text" id="category" placeholder="Category" required>
+
+    <!-- Category dropdowns -->
+    <select id="category" class="category-select" required>
+        <option value="">Select Category</option>
+    </select>
+    <select id="subcategory" required>
+        <option value="">Select Subcategory</option>
+    </select>
+
     <select id="type">
         <option value="expense">Expense</option>
         <option value="income">Income</option>
@@ -60,6 +61,7 @@
         <th>Date</th>
         <th>Amount</th>
         <th>Category</th>
+        <th>Subcategory</th>
         <th>Type</th>
         <th>Necessity</th>
         <th>Actions</th>
