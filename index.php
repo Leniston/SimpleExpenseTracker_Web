@@ -1,12 +1,51 @@
 <?php
-// index.php
+session_start(); // Start session for messages
+
 require_once 'db_config.php'; // Include the database connection file
 
-$message = ''; // Variable to store success or error messages
+$message = ''; // Initialize message variable
+
+// Check for and display session messages
+if (isset($_SESSION['message'])) {
+    $message = $_SESSION['message'];
+    unset($_SESSION['message']); // Clear the message after displaying
+}
+
 $edit_transaction_data = null; // Variable to store data of transaction being edited
 
-// Handle form submission for adding a new transaction
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_transaction'])) {
+// --- Handle Deletion ---
+// This block must be before any HTML output or other logic that might prevent header() from working.
+if (isset($_GET['delete_id']) && !empty($_GET['delete_id'])) {
+    $id_to_delete = filter_input(INPUT_GET, 'delete_id', FILTER_VALIDATE_INT);
+
+    if ($id_to_delete === false) {
+        $_SESSION['message'] = "<div class='message error'>Invalid transaction ID for deletion.</div>";
+    } else {
+        $sql_delete = "DELETE FROM transactions WHERE id = ?";
+        if ($stmt = $conn->prepare($sql_delete)) {
+            $stmt->bind_param("i", $id_to_delete);
+            if ($stmt->execute()) {
+                $_SESSION['message'] = "<div class='message success'>Transaction deleted successfully!</div>";
+            } else {
+                $_SESSION['message'] = "<div class='message error'>Error deleting transaction: " . $stmt->error . "</div>";
+            }
+            $stmt->close();
+        } else {
+            $_SESSION['message'] = "<div class='message error'>Error preparing delete query: " . $conn->error . "</div>";
+        }
+    }
+    // Always redirect after processing GET requests (like delete) to prevent re-submission on refresh
+    header("Location: index.php");
+    exit();
+}
+
+// --- Handle Form Submission (Add or Update) ---
+// This block must also be before any HTML output.
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Determine if it's an add or update operation
+    $is_update = isset($_POST['update_transaction']);
+    $transaction_id = $is_update ? filter_input(INPUT_POST, 'transaction_id', FILTER_VALIDATE_INT) : null;
+
     // Sanitize and validate input
     $transaction_date = filter_input(INPUT_POST, 'transaction_date', FILTER_SANITIZE_STRING);
     $amount = filter_input(INPUT_POST, 'amount', FILTER_VALIDATE_FLOAT);
@@ -16,90 +55,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_transaction'])) {
     $is_necessary = isset($_POST['is_necessary']) ? 1 : 0;
 
     // Basic validation
-    if (empty($transaction_date) || $amount === false || $amount <= 0 || empty($transaction_type) || empty($category)) {
-        $message = "<div class='message error'>Please fill in all required fields correctly. Amount must be a positive number.</div>";
+    if (empty($transaction_date) || $amount === false || $amount <= 0 || empty($transaction_type) || empty($category) || ($is_update && $transaction_id === false)) {
+        $_SESSION['message'] = "<div class='message error'>Please fill in all required fields correctly. Amount must be a positive number.</div>";
     } else {
-        // Prepare an insert statement
-        $sql = "INSERT INTO transactions (transaction_date, amount, transaction_type, category, description, is_necessary) VALUES (?, ?, ?, ?, ?, ?)";
-
-        if ($stmt = $conn->prepare($sql)) {
-            // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("sdsssi", $transaction_date, $amount, $transaction_type, $category, $description, $is_necessary);
-
-            // Attempt to execute the prepared statement
-            if ($stmt->execute()) {
-                $message = "<div class='message success'>Transaction added successfully!</div>";
+        if ($is_update) {
+            // Update statement
+            $sql = "UPDATE transactions SET transaction_date = ?, amount = ?, transaction_type = ?, category = ?, description = ?, is_necessary = ? WHERE id = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param("sdsssi", $transaction_date, $amount, $transaction_type, $category, $description, $is_necessary, $transaction_id);
+                if ($stmt->execute()) {
+                    $_SESSION['message'] = "<div class='message success'>Transaction updated successfully!</div>";
+                } else {
+                    $_SESSION['message'] = "<div class='message error'>Error updating transaction: " . $stmt->error . "</div>";
+                }
+                $stmt->close();
             } else {
-                $message = "<div class='message error'>Error: Could not execute query: " . $stmt->error . "</div>";
+                $_SESSION['message'] = "<div class='message error'>Error preparing update query: " . $conn->error . "</div>";
             }
-
-            // Close statement
-            $stmt->close();
         } else {
-            $message = "<div class='message error'>Error: Could not prepare query: " . $conn->error . "</div>";
+            // Add statement
+            $sql = "INSERT INTO transactions (transaction_date, amount, transaction_type, category, description, is_necessary) VALUES (?, ?, ?, ?, ?, ?)";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param("sdsssi", $transaction_date, $amount, $transaction_type, $category, $description, $is_necessary);
+                if ($stmt->execute()) {
+                    $_SESSION['message'] = "<div class='message success'>Transaction added successfully!</div>";
+                } else {
+                    $_SESSION['message'] = "<div class='message error'>Error: Could not execute query: " . $stmt->error . "</div>";
+                }
+                $stmt->close();
+            } else {
+                $_SESSION['message'] = "<div class='message error'>Error: Could not prepare query: " . $conn->error . "</div>";
+            }
         }
     }
-}
-
-// Handle form submission for updating an existing transaction
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_transaction'])) {
-    $id = filter_input(INPUT_POST, 'transaction_id', FILTER_VALIDATE_INT);
-    $transaction_date = filter_input(INPUT_POST, 'transaction_date', FILTER_SANITIZE_STRING);
-    $amount = filter_input(INPUT_POST, 'amount', FILTER_VALIDATE_FLOAT);
-    $transaction_type = filter_input(INPUT_POST, 'transaction_type', FILTER_SANITIZE_STRING);
-    $category = filter_input(INPUT_POST, 'category', FILTER_SANITIZE_STRING);
-    $description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING);
-    $is_necessary = isset($_POST['is_necessary']) ? 1 : 0;
-
-    if ($id === false || empty($transaction_date) || $amount === false || $amount <= 0 || empty($transaction_type) || empty($category)) {
-        $message = "<div class='message error'>Error updating transaction: Invalid input.</div>";
-    } else {
-        $sql = "UPDATE transactions SET transaction_date = ?, amount = ?, transaction_type = ?, category = ?, description = ?, is_necessary = ? WHERE id = ?";
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bind_param("sdsssi", $transaction_date, $amount, $transaction_type, $category, $description, $is_necessary, $id);
-            if ($stmt->execute()) {
-                $message = "<div class='message success'>Transaction updated successfully!</div>";
-            } else {
-                $message = "<div class='message error'>Error updating transaction: " . $stmt->error . "</div>";
-            }
-            $stmt->close();
-        } else {
-            $message = "<div class='message error'>Error preparing update query: " . $conn->error . "</div>";
-        }
-    }
-}
-
-// Handle deletion of a transaction
-if (isset($_GET['delete_id']) && !empty($_GET['delete_id'])) {
-    $id_to_delete = filter_input(INPUT_GET, 'delete_id', FILTER_VALIDATE_INT);
-
-    if ($id_to_delete === false) {
-        $message = "<div class='message error'>Invalid transaction ID for deletion.</div>";
-    } else {
-        $sql_delete = "DELETE FROM transactions WHERE id = ?";
-        if ($stmt = $conn->prepare($sql_delete)) {
-            $stmt->bind_param("i", $id_to_delete);
-            if ($stmt->execute()) {
-                $message = "<div class='message success'>Transaction deleted successfully!</div>";
-            } else {
-                $message = "<div class='message error'>Error deleting transaction: " . $stmt->error . "</div>";
-            }
-            $stmt->close();
-        } else {
-            $message = "<div class='message error'>Error preparing delete query: " . $conn->error . "</div>";
-        }
-    }
-    // Redirect to clear the GET parameter after deletion
+    // Redirect after POST to prevent form re-submission on refresh
     header("Location: index.php");
     exit();
 }
 
-// Handle editing a transaction (pre-fill form)
+// --- Handle Editing (pre-fill form) ---
+// This block runs after POST/DELETE processing, but before fetching all transactions,
+// so the form can be populated if an edit_id is present.
 if (isset($_GET['edit_id']) && !empty($_GET['edit_id'])) {
     $id_to_edit = filter_input(INPUT_GET, 'edit_id', FILTER_VALIDATE_INT);
 
     if ($id_to_edit === false) {
-        $message = "<div class='message error'>Invalid transaction ID for editing.</div>";
+        $_SESSION['message'] = "<div class='message error'>Invalid transaction ID for editing.</div>";
+        header("Location: index.php"); // Redirect to clear invalid edit_id
+        exit();
     } else {
         $sql_edit = "SELECT id, transaction_date, amount, transaction_type, category, description, is_necessary FROM transactions WHERE id = ?";
         if ($stmt = $conn->prepare($sql_edit)) {
@@ -109,20 +112,27 @@ if (isset($_GET['edit_id']) && !empty($_GET['edit_id'])) {
                 if ($result->num_rows == 1) {
                     $edit_transaction_data = $result->fetch_assoc();
                 } else {
-                    $message = "<div class='message error'>Transaction not found for editing.</div>";
+                    $_SESSION['message'] = "<div class='message error'>Transaction not found for editing.</div>";
+                    header("Location: index.php"); // Redirect if transaction not found
+                    exit();
                 }
             } else {
-                $message = "<div class='message error'>Error fetching transaction for editing: " . $stmt->error . "</div>";
+                $_SESSION['message'] = "<div class='message error'>Error fetching transaction for editing: " . $stmt->error . "</div>";
+                header("Location: index.php"); // Redirect on database error
+                exit();
             }
             $stmt->close();
         } else {
-            $message = "<div class='message error'>Error preparing edit query: " . $conn->error . "</div>";
+            $_SESSION['message'] = "<div class='message error'>Error preparing edit query: " . $conn->error . "</div>";
+            header("Location: index.php"); // Redirect on database error
+            exit();
         }
     }
+    // No redirect here, as we want the form to be pre-filled
 }
 
 
-// Fetch all transactions for display
+// Fetch all transactions for display (this runs after all POST/GET processing)
 $transactions = [];
 $sql_select = "SELECT id, transaction_date, amount, transaction_type, category, description, is_necessary FROM transactions ORDER BY transaction_date DESC, id DESC";
 if ($result = $conn->query($sql_select)) {
@@ -131,6 +141,8 @@ if ($result = $conn->query($sql_select)) {
     }
     $result->free();
 } else {
+    // If fetching transactions fails, add an error message
+    // Note: This message won't be session-based as it's for the current page load
     $message .= "<div class='message error'>Error fetching transactions: " . $conn->error . "</div>";
 }
 
