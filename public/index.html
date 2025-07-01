@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Expense Tracker</h1>
+
+    <form id="transaction-form">
+        <input type="hidden" id="transaction-id">
+        <input type="text" id="name" placeholder="Transaction Name" required>
+        <input type="date" id="date" required>
+        <input type="number" id="amount" step="0.01" placeholder="Amount" required>
+        <input type="text" id="category" placeholder="Category" required>
+        <select id="type">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+        </select>
+        <select id="necessity">
+            <option value="">--</option>
+            <option value="necessary">Necessary</option>
+            <option value="unnecessary">Unnecessary</option>
+        </select>
+        <button type="submit">Save</button>
+    </form>
+
+
+    <button id="import-xls-btn" type="button">Import XLS</button>
+
+    <div id="import-xls-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:10; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:2rem; border-radius:8px; max-width:400px;">
+            <h3>Import Transactions (XLS/XLSX or Paste)</h3>
+            <input type="file" id="xls-file-input" accept=".xls,.xlsx"><br>
+            <div style="margin-top:1em;">or paste table data below:</div>
+            <textarea id="xls-paste" rows="8" style="width:100%;"></textarea>
+            <div style="margin-top:1em;">
+                <button id="import-xls-submit" type="button">Import</button>
+                <button id="import-xls-cancel" type="button">Cancel</button>
+            </div>
+            <div id="xls-import-error" style="color:red; margin-top:1em;"></div>
+        </div>
+    </div>
+
+    <table id="transactions-table">
+        <thead>
+            <tr>
+                <th>Name</th><th>Date</th><th>Amount</th><th>Category</th>
+                <th>Type</th><th>Necessity</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <a href="report.html">View Reports</a>
+    <script src="main.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+</body>
+</html>
