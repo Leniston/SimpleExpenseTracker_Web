@@ -13,6 +13,9 @@
     --error-color: #dc3545;
     --income-color: #28a745; /* Green for income */
     --expense-color: #dc3545; /* Red for expense */
+    --edit-btn-color: #f0ad4e; /* Orange for edit */
+    --delete-btn-color: #d9534f; /* Red for delete */
+    --cancel-btn-color: #6c757d; /* Gray for cancel */
 }
 
 body {
@@ -169,6 +172,27 @@ button[type="submit"]:hover {
     transform: translateY(-2px);
 }
 
+.cancel-edit-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background-color: var(--cancel-btn-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-top: 10px; /* Space between submit and cancel */
+}
+
+.cancel-edit-btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+
 .table-responsive {
     overflow-x: auto; /* Ensures table is scrollable on small screens */
 }
@@ -218,6 +242,125 @@ table .expense {
     font-weight: 600;
 }
 
+.actions-cell {
+    white-space: nowrap; /* Prevent buttons from wrapping */
+}
+
+.action-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 5px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.edit-btn {
+    background-color: var(--edit-btn-color);
+    color: white;
+}
+
+.edit-btn:hover {
+    background-color: #e09b3d;
+    transform: translateY(-1px);
+}
+
+.delete-btn {
+    background-color: var(--delete-btn-color);
+    color: white;
+}
+
+.delete-btn:hover {
+    background-color: #c9302c;
+    transform: translateY(-1px);
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    display: flex; /* Use flexbox for centering */
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--card-background);
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more specific like max-width: 400px */
+    max-width: 450px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+    text-align: center;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.modal-content p {
+    margin-bottom: 25px;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.modal-actions .action-btn {
+    flex: 1; /* Make buttons take equal width */
+    max-width: 120px;
+    padding: 10px 15px;
+    font-size: 1rem;
+}
+
+.modal-actions .cancel-btn {
+    background-color: var(--cancel-btn-color);
+    color: white;
+}
+
+.modal-actions .cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .container {
@@ -247,6 +390,20 @@ table .expense {
     table td {
         padding: 10px;
         font-size: 0.85rem;
+    }
+
+    .modal-content {
+        width: 90%;
+        padding: 20px;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .modal-actions .action-btn {
+        max-width: 100%;
     }
 }
 
