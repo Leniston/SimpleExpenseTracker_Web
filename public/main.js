@@ -1,6 +1,5 @@
 const apiBase = '../backend/';
 
-// Fetch and display transactions
 function fetchTransactions() {
     fetch(apiBase + 'fetch_transactions.php')
         .then(res => res.json())
@@ -26,7 +25,6 @@ function fetchTransactions() {
         });
 }
 
-// Handle enabling/disabling necessity box based on type
 function handleNecessityBox() {
     const type = document.getElementById('type').value;
     const necessity = document.getElementById('necessity');
@@ -42,7 +40,6 @@ function handleNecessityBox() {
 document.getElementById('type').addEventListener('change', handleNecessityBox);
 window.addEventListener('DOMContentLoaded', handleNecessityBox);
 
-// Form submit (add/edit)
 document.getElementById('transaction-form').onsubmit = function(e) {
     e.preventDefault();
     const id = document.getElementById('transaction-id').value;
@@ -69,7 +66,6 @@ document.getElementById('transaction-form').onsubmit = function(e) {
     });
 };
 
-// Edit transaction
 window.editTransaction = function(tx) {
     document.getElementById('transaction-id').value = tx.id;
     document.getElementById('name').value = tx.name;
@@ -81,47 +77,11 @@ window.editTransaction = function(tx) {
     handleNecessityBox();
 };
 
-// Delete transaction
 window.deleteTransaction = function(id) {
     if (!confirm('Delete this transaction?')) return;
     fetch(apiBase + 'delete_transaction.php?id=' + id)
         .then(() => fetchTransactions());
 };
-
-// ---- DATA PASTE IMPORT ----
-const dataBtn = document.getElementById('import-data-btn');
-const dataModal = document.getElementById('import-data-modal');
-const dataSubmit = document.getElementById('import-data-submit');
-const dataCancel = document.getElementById('import-data-cancel');
-const dataPaste = document.getElementById('data-paste');
-const dataError = document.getElementById('data-import-error');
-const csvUploadBtn = document.getElementById('csv-upload-btn');
-const csvFileInput = document.getElementById('csv-file');
-const uploadStatus = document.getElementById('upload-status');
-
-// Manual paste handlers
-dataBtn.onclick = () => {
-    dataModal.style.display = 'flex';
-    dataPaste.value = '';
-    dataError.textContent = '';
-};
-
-dataCancel.onclick = () => {
-    dataModal.style.display = 'none';
-    dataError.textContent = '';
-};
-
-// File upload handlers
-csvUploadBtn.onclick = () => csvFileInput.click();
-
-function showUploadStatus(message, isError = false) {
-    uploadStatus.textContent = message;
-    uploadStatus.className = isError ? 'error' : 'success';
-    setTimeout(() => {
-        uploadStatus.textContent = '';
-        uploadStatus.className = '';
-    }, 5000);
-}
 
 function parseEuro(str) {
     if (!str || str === '-' || String(str).trim() === '') return 0;
@@ -136,75 +96,18 @@ function parseDate(d) {
     return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
 }
 
-function processPTSBData(content) {
-    const lines = content.split('\n');
-    const txStartIndex = lines.findIndex(line =>
-        line.trim().startsWith('Date,,Description,Money In'));
-
-    if (txStartIndex === -1) {
-        throw new Error('Invalid PTSB statement format');
-    }
-
-    const transactions = [];
-    for (let i = txStartIndex + 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line || line.startsWith('This statement')) break;
-
-        const cols = line.split(',');
-        if (cols.length < 5 || !cols[0]) continue;
-
-        const date = cols[0].trim();
-        const desc = cols[2].trim();
-        const moneyIn = cols[3].trim();
-        const moneyOut = cols[4].trim();
-
-        let type, amount;
-        if (moneyIn && moneyIn !== '-') {
-            type = 'income';
-            amount = parseEuro(moneyIn);
-        } else if (moneyOut && moneyOut !== '-') {
-            type = 'expense';
-            amount = Math.abs(parseEuro(moneyOut));
-        } else {
-            continue;
-        }
-
-        if (isNaN(amount)) continue;
-
-        transactions.push({
-            name: desc,
-            date: parseDate(date),
-            amount: amount,
-            category: '',
-            type: type,
-            necessity: type === 'income' ? '' : 'necessary'
-        });
-    }
-
-    return transactions;
+function showUploadStatus(message, isError = false) {
+    const status = document.getElementById('upload-status');
+    status.textContent = message;
+    status.className = isError ? 'error' : 'success';
 }
 
-async function importTransactions(transactions) {
-    if (transactions.length === 0) {
-        throw new Error('No valid transactions found');
-    }
+// File upload handling
+document.getElementById('csv-upload-btn').onclick = () => {
+    document.getElementById('csv-file').click();
+};
 
-    const response = await fetch(apiBase + 'import_csv.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({transactions})
-    });
-
-    const result = await response.json();
-    if (!result.success) {
-        throw new Error(result.error || 'Import failed');
-    }
-
-    return transactions.length;
-}
-
-// File upload handler
-csvFileInput.onchange = async (e) => {
+document.getElementById('csv-file').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -212,30 +115,74 @@ csvFileInput.onchange = async (e) => {
 
     try {
         const content = await file.text();
-        const transactions = processPTSBData(content);
-        const count = await importTransactions(transactions);
-        showUploadStatus(`Successfully imported ${count} transactions`);
+        const lines = content.split('\n');
+        const txStartIndex = lines.findIndex(line =>
+            line.includes('Date') && line.includes('Description') && line.includes('Money In'));
+
+        if (txStartIndex === -1) {
+            throw new Error('Invalid PTSB statement format');
+        }
+
+        const transactions = [];
+        for (let i = txStartIndex + 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line || line.startsWith('This statement')) break;
+
+            const cols = line.split(',');
+            if (cols.length < 5 || !cols[0]) continue;
+
+            const date = cols[0].trim();
+            const desc = cols[2].trim();
+            const moneyIn = cols[3].trim();
+            const moneyOut = cols[4].trim();
+
+            let type, amount;
+            if (moneyIn && moneyIn !== '-') {
+                type = 'income';
+                amount = parseEuro(moneyIn);
+            } else if (moneyOut && moneyOut !== '-') {
+                type = 'expense';
+                amount = Math.abs(parseEuro(moneyOut));
+            } else {
+                continue;
+            }
+
+            if (isNaN(amount)) continue;
+
+            transactions.push({
+                name: desc,
+                date: parseDate(date),
+                amount: amount,
+                category: '',
+                type: type,
+                necessity: type === 'income' ? '' : 'necessary'
+            });
+        }
+
+        if (transactions.length === 0) {
+            throw new Error('No valid transactions found');
+        }
+
+        const response = await fetch(apiBase + 'import_csv.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({transactions})
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Import failed');
+        }
+
+        showUploadStatus(`Successfully imported ${transactions.length} transactions`);
         fetchTransactions();
+
     } catch (err) {
         showUploadStatus(err.message, true);
+        console.error('Import error:', err);
     }
 
-    csvFileInput.value = '';
-};
-
-// Manual paste handler
-dataSubmit.onclick = async () => {
-    dataError.textContent = '';
-
-    try {
-        const transactions = processPTSBData(dataPaste.value);
-        await importTransactions(transactions);
-        dataModal.style.display = 'none';
-        fetchTransactions();
-        showUploadStatus(`Successfully imported ${transactions.length} transactions`);
-    } catch (err) {
-        dataError.textContent = err.message;
-    }
+    e.target.value = '';
 };
 
 fetchTransactions();

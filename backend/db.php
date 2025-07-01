@@ -1,11 +1,17 @@
 <?php
-$host = 'localhost';
-$db = 'expense_tracker';
-$user = 'root';
-$pass = ''; // Set your MySQL root password if any
+$servername = "localhost";
+$username = "root";  // Your MySQL username
+$password = "";      // Your MySQL password
+$dbname = "expense_tracker";  // Your database name
 
-$conn = new mysqli($host, $user, $pass, $db);
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
 if ($conn->connect_error) {
-    die('Connection failed: ' . $conn->connect_error);
+    error_log("Connection failed: " . $conn->connect_error);
+    die("Connection failed: " . $conn->connect_error);
 }
-?>
+
+// Set charset
+$conn->set_charset("utf8mb4");
