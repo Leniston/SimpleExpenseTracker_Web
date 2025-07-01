@@ -1,6 +1,8 @@
 // script.js
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM Content Loaded.");
+
     const transactionForm = document.getElementById('transactionForm');
     const deleteButtons = document.querySelectorAll('.delete-btn');
     const deleteConfirmationModal = document.getElementById('deleteConfirmationModal');
@@ -12,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to show the custom modal
     function showModal(message) {
+        console.log("Showing modal with message:", message);
         const modalMessage = deleteConfirmationModal.querySelector('p');
         modalMessage.textContent = message;
         deleteConfirmationModal.style.display = 'flex'; // Use flex to center
@@ -19,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to hide the custom modal
     function hideModal() {
+        console.log("Hiding modal.");
         deleteConfirmationModal.style.display = 'none';
     }
 
@@ -27,7 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // but the structure for a custom modal is in place.
     window.originalAlert = window.alert; // Store original alert
     window.alert = function(message) {
-        // In a full application, you would integrate this with your custom modal.
+        console.log("Custom Alert (via console.log):", message);
+        // In a a full application, you would display a custom modal here.
         // For quick demo purposes, we'll use the browser's alert for validation messages.
         window.originalAlert(message);
     };
@@ -35,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (transactionForm) {
         transactionForm.addEventListener('submit', function(event) {
+            console.log("Transaction form submitted.");
             const amountInput = document.getElementById('amount');
             const amount = parseFloat(amountInput.value);
 
@@ -52,27 +58,31 @@ document.addEventListener('DOMContentLoaded', function() {
     deleteButtons.forEach(button => {
         button.addEventListener('click', function() {
             transactionIdToDelete = this.dataset.id; // Get the ID from the data-id attribute
+            console.log("Delete button clicked. ID to delete:", transactionIdToDelete);
             showModal('Are you sure you want to delete this transaction?');
         });
     });
 
     // Confirm deletion
     confirmDeleteBtn.addEventListener('click', function() {
+        console.log("Confirm Delete button clicked. Final ID:", transactionIdToDelete);
         if (transactionIdToDelete) {
             // Redirect to PHP script with delete_id parameter
             window.location.href = `index.php?delete_id=${transactionIdToDelete}`;
         }
-        hideModal();
+        hideModal(); // Hide modal even if ID is null (shouldn't happen if triggered by button)
     });
 
     // Cancel deletion
     cancelDeleteBtn.addEventListener('click', function() {
+        console.log("Cancel Delete button clicked.");
         hideModal();
         transactionIdToDelete = null; // Clear the ID
     });
 
     // Close modal using the 'x' button
     closeModalBtn.addEventListener('click', function() {
+        console.log("Close modal 'x' button clicked.");
         hideModal();
         transactionIdToDelete = null;
     });
@@ -80,13 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close modal if user clicks outside of the modal content
     window.addEventListener('click', function(event) {
         if (event.target == deleteConfirmationModal) {
+            console.log("Clicked outside modal. Hiding modal.");
             hideModal();
             transactionIdToDelete = null;
         }
     });
-
-    // Handle pre-filling the form for editing
-    // This part is mostly handled by PHP, but if we had dynamic content loading,
-    // JS would fetch data and populate the form. For now, the PHP handles it on page load.
-    // The "Cancel Edit" button is handled by a simple redirect in its onclick attribute in HTML.
 });
