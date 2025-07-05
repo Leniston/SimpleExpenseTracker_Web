@@ -1,0 +1,60 @@
+{
+    "name": "Subscription",
+    "type": "object",
+    "properties": {
+    "name": {
+        "type": "string",
+            "description": "Name of the subscription or recurring charge"
+    },
+    "amount": {
+        "type": "number",
+            "description": "Amount of the charge"
+    },
+    "category": {
+        "type": "string",
+            "enum": [
+            "utilities",
+            "entertainment",
+            "shopping",
+            "software",
+            "insurance",
+            "rent",
+            "other"
+        ],
+            "description": "Transaction category"
+    },
+    "frequency": {
+        "type": "string",
+            "enum": [
+            "monthly",
+            "yearly"
+        ],
+            "description": "How often the charge occurs"
+    },
+    "start_date": {
+        "type": "string",
+            "format": "date",
+            "description": "The date the subscription starts"
+    },
+    "last_billed_date": {
+        "type": "string",
+            "format": "date",
+            "description": "The date of the last transaction created for this subscription"
+    },
+    "is_necessary": {
+        "type": "boolean",
+            "default": true
+    },
+    "notes": {
+        "type": "string",
+            "description": "Additional notes"
+    }
+},
+    "required": [
+    "name",
+    "amount",
+    "category",
+    "frequency",
+    "start_date"
+]
+}
